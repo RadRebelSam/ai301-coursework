@@ -136,6 +136,21 @@ change. The regression test was checked in both directions as well - it passes
 with the fix and fails with the fix stashed, so it is testing the call site and
 not just passing by construction.
 
+**Added during unit 4 submission prep, after the plan was posted:** the
+`attr-defined` code was removed from the `api.routes.health` mypy override in
+`pyproject.toml`, and the regression test gained `@pytest.mark.unit`.
+
+The suppression is this bug: the comment above it in `pyproject.toml` names
+issue #62 and says "Fixing a seeded bug should remove its entry here, the same
+way it removes the test's xfail marker." The plan did not name it because I had
+not read that part of the repo's contributing docs when I wrote the plan. With
+the fix in place `mypy api/ core/ ingestion/ rag/ agent/ safety/` reports
+`Success: no issues found in 76 source files`, so the suppression is no longer
+load-bearing. The module's other two codes (`call-overload`, `index`) stay,
+because they belong to issue #61, which this change leaves alone. The marker on
+the test is what makes `make test-unit` (`pytest tests/unit -m unit`) collect
+it; without it the test existed but never ran in the repo's own check.
+
 Two environment notes that do not affect the change:
 
 - The `db=0` risk I flagged did not materialize. The configured

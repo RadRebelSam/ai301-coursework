@@ -55,10 +55,19 @@ happened; these entries are the toolkit's own timeline.
 All four entries are graded. Keep every heading below, and fill each
 one in the week it belongs to.
 
-**Unit 5: [one line on the tool work]**
+**Unit 5: installed issue-scout, wrote a five-query strategy, ran and patched the first scan (2026-10-17)**
 
-[2-4 sentences: what you built (the scout, your strategy), what broke
-or fell short, what changed because of it.]
+I installed the scout over my Unit 1 skill and wrote a strategy that
+searches my own stack (owner queries for Litestar, pydantic, SQLAlchemy,
+Pallets and pytest-dev, plus a broad Python bug fallback) and ranks bugs
+first, docs second, features last, one issue per repo. The first scan
+graded five issues and rejected all five: four were already claimed by a
+comment or a linked PR, which ranking cannot see, and the rubric's
+repo-alive check failed pytest-asyncio even though people had merged
+every one of its recent dependabot PRs. I added `-linked:pr` to every
+query so linked issues never reach grading, and changed repo-alive to
+count a person merging a bot's PR; a free re-rank then showed my stack's
+newcomer pool is thin, so widening the owner list is my next change.
 
 **Unit 6: [one line on the tool work]**
 

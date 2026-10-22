@@ -1,4 +1,4 @@
-# Contribution: [Issue Title]
+# Contribution: Add unit tests for Page-Context Router
 
 Path: `beat-2-contribution/contribution-story.md`
 
@@ -8,10 +8,9 @@ format criteria grade exactly that. Your course repo link is the whole submissio
 files and no evidence uploads are part of Assignment 5.
 
 **Contribution Number:** [1]
-**Student:** [Student name]
-**GitHub Username:** [your GitHub username, exactly as it appears on your profile - no @, no
-profile URL. Your comments upstream are identified by this name.]
-**Issue:** [GitHub issue link]
+**Student:** Dexin Yang
+**GitHub Username:** RadRebelSam
+**Issue:** https://github.com/opensearch-project/opensearch-agent-server/issues/9
 **Pull Request:** [GitHub PR link, once opened]
 
 One repository, built across units 5 to 8, telling the whole story of your real
@@ -69,11 +68,22 @@ query so linked issues never reach grading, and changed repo-alive to
 count a person merging a bot's PR; a free re-rank then showed my stack's
 newcomer pool is thin, so widening the owner list is my next change.
 
-**Unit 6: [one line on the tool work]**
+**Unit 6: voice guard with an Upstream section, and a repo-memory file for agent-server (2026-10-21)**
 
-[2-4 sentences: the voice-guard, the repo-memory file. What broke or
-fell short, and what changed because of it. "Nothing broke" counts when
-it is true - say how you know.]
+I added Upstream rules to my voice guide (claims, questions, pings),
+made it one canonical file that repro-check, plan-check and pr-precheck
+all link to, and wired the guard hook into Claude Code. Two things
+broke: Git Bash's `ln -s` silently copies files unless native symlinks
+are turned on, which would have let the three copies drift apart, so I
+forced real links and checked them; and my terminal `claude` routes
+through a local proxy that served no model, so the guard's wiring test
+and its draft check could not run yet. Checked after the fact,
+repro-check accepted the claim I had already posted, but my own new
+claim rule caught that it gave no time for an update, so my next
+comment will carry one. My `CLAUDE.local.md` (57 lines, kept out of
+git with `.git/info/exclude`) records the rules I would otherwise have
+broken: OpenSearch's DCO needs my real name while my git name is a
+handle, and CI fails under 90% coverage.
 
 **Unit 7: [one line on the tool work]**
 
@@ -89,24 +99,62 @@ drafted, what you did with the draft.]
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs in your own words: how you searched, what your scan
-surfaced, what your scout's verdict said, why this issue fits your
-profile, and what you hope to learn. If your scout's verdict on it
-was reject and you chose it anyway, say so here and say why; choosing
-against your own tool silently is what loses points. Close with an
-honest read of the tool itself: where the scout fell short on a real
-wild search and what you changed or would change, or what convinced
-you it held up. **Record the link to your claim comment in this section too.**
-Not claimed yet? Write `claim pending` and today's date where the link goes,
-and add the link the moment your claim lands.]
+My scout searched the stack I know: owner queries for Litestar, pydantic,
+SQLAlchemy, Pallets and pytest-dev, plus a broad search for labeled Python
+bugs as a fallback. The first scan graded five issues and rejected all
+five, four of them because someone had already claimed them. So I took my
+picks from the course's Issue Selection site and graded two directly:
+opensearch-agent-server#9 and opensearch-benchmark#228. I chose #9 because
+it is exactly the kind of work my profile asks for: unit tests for one
+class (`PageContextRouter`), with the expected behaviors listed and a
+result I can check locally with pytest, in a codebase I did not write.
+Looking closer, PR #164 had already covered four of the six cases, so
+before choosing I asked on the issue whether the other two were still
+wanted. The maintainer said yes and assigned it to me. My scout's latest
+verdict (2026-10-21, after this week's scope patch) is accept, with the
+difficulty note "straightforward". What I hope to learn is how to find
+exactly where a behavior lives in someone else's code, and how to write
+tests that pin a behavior down rather than just cover lines: the router
+already has 100% line coverage, yet nothing stops someone from making its
+matching case-insensitive.
+
+Honestly, the scout fell short more than it held up on a real search. Its
+first scan accepted nothing; its ranking could not see claims; it failed
+a live repo (pytest-asyncio) because people, not bots, merged the bot's
+pull requests; it accepted #9 even though most of the work had already
+landed; and after I claimed #9, it rejected my own issue as "claimed".
+Each of those became a rubric or strategy fix (logged with dates in my
+`scan-notes.md`). Its verdicts were useful evidence, but the fact that
+decided my choice, whether the remaining work was still wanted, came from
+asking the maintainer, not from the tool.
+
+Claim comment: https://github.com/opensearch-project/opensearch-agent-server/issues/9#issuecomment-6242969864
+
+I posted that claim on 2026-10-17, a week before this unit's voice guard
+and claim check existed, so I did not post a second one. Instead I saved
+the posted text as my claim draft and checked it afterwards: repro-check
+accepted it, and my own new voice-guide rule caught that it gave no time
+for an update.
 
 **Toolkit**
 
-- Tool: issue-scout (your scout: your search strategy, your rubric),
-  and how you used it
-- What it produced: [the scan and its verdict on this issue, described]
-- Difficulties: [where it fell short, or "none met" if none did]
-- What changed: [what you patched or would update, or "nothing"]
+- Tool: issue-scout (my search strategy and my rubric), run through Claude
+  Code: one scan, then direct grades of my two picks, a re-grade after
+  the maintainer replied, and a final grade after this week's scope patch.
+- What it produced: scan 1 searched 199 issues and graded the top 5, all
+  rejected. Direct grades accepted #9 and #228. The final grade of #9 is
+  accept with the difficulty note "straightforward"; #228 is accept but
+  "ambitious", because a maintainer's later commit contradicts its 2023
+  decision.
+- Difficulties: claims were invisible to ranking; repo-alive misread
+  human-merged bot commits as no human activity; no check asked whether
+  the work had already landed; my own claim counted as someone else's;
+  and the strict scope check rejected most real issues.
+- What changed: I added `-linked:pr` to every query; repo-alive now counts
+  a person merging a bot's PR; unclaimed now ignores my own account; and
+  maintainer-responsive ignores bot-opened issues. This week I replaced my
+  `bounded-scope` check with `scope-feasible` plus a difficulty note,
+  keeping "the work has already landed" as a reason to reject.
 
 ---
 
@@ -141,31 +189,92 @@ and add the link the moment your claim lands.]
 
 **Environment Setup**
 
-[What a stranger would need to stand this up: your operating system,
-the relevant versions (language, runtime, package manager, the project
-itself), and how you set the project up. Then the challenges you faced
-and how you solved them, or that none came up.]
+Windows 10 Home (10.0.19045) with Git Bash. opensearch-agent-server `main`
+at commit `9340178` (2026-09-01), cloned from upstream. uv 0.11.29 and
+Python 3.12.9; pytest 9.0.3 and pytest-cov 7.0.0, installed with
+`uv sync --all-extras` as the repo's DEVELOPER_GUIDE.md describes. Two
+challenges: the project needs Python 3.12 or newer and my system Python is
+3.11.3, so I let uv download 3.12 (`--python 3.12`); and my checkout sits
+in a Google Drive folder, so I put the virtual environment outside it with
+`UV_PROJECT_ENVIRONMENT` to stop Drive syncing thousands of package files.
+CI also runs on Linux and macOS; I only ran on Windows.
 
 **Steps to Reproduce**
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+1. Clone the repo and run `uv sync --all-extras --python 3.12`.
+2. List the router tests:
+   `uv run pytest tests/unit/orchestrator/test_router.py --collect-only -q`.
+3. Build the same registry the existing tests use (`art` on
+   `search-relevance`, default agent `olly`), then call
+   `PageContextRouter.route()` with `search-relevance`, `Search-Relevance`,
+   `SEARCH-RELEVANCE`, ` search-relevance` and `""`.
+4. Check router coverage:
+   `uv run pytest tests/unit/orchestrator/test_router.py -q --cov=orchestrator.router --cov-report=term-missing`.
+5. Make matching case-insensitive in memory only (patch
+   `AgentRegistry.get_agent_for_context`, no file changed), then run the
+   same four tests.
+6. Observed: four tests, none passing an empty string or a different-case
+   context; every input except the exact `search-relevance` goes to the
+   default agent; line coverage is already 100%; and all four tests still
+   pass with case-insensitive matching.
 
 **Reproduction Evidence**
 
-- **Commit showing reproduction:** [link to commit in your fork]
-- **Screenshots/logs:** [if applicable]
-- **My findings:** [what you discovered during reproduction; an
-  honest, evidenced cannot-reproduce that led you to re-pick or ask
-  the maintainer belongs here and costs you nothing]
+- **Commit showing reproduction:** none. The issue asks for tests, so there
+  is no failing behavior to commit yet, and I had not forked the repo when
+  I reproduced it.
+- **Screenshots/logs:**
+
+  ```
+  $ uv run pytest tests/unit/orchestrator/test_router.py --collect-only -q
+  tests/unit/orchestrator/test_router.py::TestPageContextRouter::test_tier1_context_match
+  tests/unit/orchestrator/test_router.py::TestPageContextRouter::test_falls_back_to_default_when_no_match
+  tests/unit/orchestrator/test_router.py::TestPageContextRouter::test_falls_back_to_default_when_context_none
+  tests/unit/orchestrator/test_router.py::TestPageContextRouter::test_raises_when_no_default_and_no_match
+  4 tests collected in 0.03s
+
+  # step 3: route() on each input
+  'search-relevance' -> art
+  'Search-Relevance' -> olly
+  'SEARCH-RELEVANCE' -> olly
+  ' search-relevance' -> olly
+  '' -> olly
+
+  # step 4: coverage
+  src\orchestrator\router.py      18      0   100%
+  4 passed in 0.11s
+
+  # step 5: the same tests with case-insensitive matching
+  4 passed in 0.04s
+  ```
+
+- **My findings:** The issue is real, as a test gap rather than a bug: both
+  behaviors exist on main, and no test pins either one. Matching is an
+  exact dictionary lookup (`self._page_context_map.get(page_context)`,
+  `src/orchestrator/registry.py` line 75), so case and whitespace both
+  matter. An empty string never reaches the registry, because `route()`
+  checks `if page_context:` first and an empty string is falsy. Line
+  coverage cannot show this gap; step 5 shows the current tests would not
+  notice if case sensitivity changed. The empty-string test is the thinner
+  half: I found no plausible code change that breaks it, so it mainly
+  documents the contract.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: repro-check, run through Claude Code, first on my claim alone and
+  then on the claim plus my repro report (`claim-draft.md` and
+  `repro-draft.md`).
+- What it produced: accept both times. In the full run, all seven required
+  checks passed, and it re-ran every command in my report itself and got
+  the same output.
+- Difficulties: my claim was already posted before this week's tools
+  existed, so the claim check was a look back, not a gate. It flagged that
+  my claim broke my own new voice-guide rule (no update time), and that my
+  follow-up comment on the thread mentioned a leading-space input my report
+  had never run.
+- What changed: I added ` search-relevance` to step 3 so the report backs
+  everything I said on the thread, and my next comment on the issue will
+  give a time for an update.
 
 ---
 

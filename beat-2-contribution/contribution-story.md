@@ -11,7 +11,7 @@ files and no evidence uploads are part of Assignment 5.
 **Student:** Dexin Yang
 **GitHub Username:** RadRebelSam
 **Issue:** https://github.com/opensearch-project/opensearch-agent-server/issues/9
-**Pull Request:** [GitHub PR link, once opened]
+**Pull Request:** https://github.com/opensearch-project/opensearch-agent-server/pull/177
 
 One repository, built across units 5 to 8, telling the whole story of your real
 contribution. Fill it as you work, not at the end — the sections below ask for evidence that
@@ -85,10 +85,19 @@ git with `.git/info/exclude`) records the rules I would otherwise have
 broken: OpenSearch's DCO needs my real name while my git name is a
 handle, and CI fails under 90% coverage.
 
-**Unit 7: [one line on the tool work]**
+**Unit 7: ship-gate and a three-check manifest; PR #177 opened through both hooks (2026-11-01)**
 
-[2-4 sentences: the ship-gate and your gate manifest. What it produced
-on your real branch, what fought you, what changed because of it.]
+My manifest lists the repo's three pre-PR checks (unit tests with the 90%
+coverage gate, `ruff check`, `ruff format --check`), written as my venv's
+own `python.exe` and `ruff.exe`, because my venv lives outside the repo;
+the changelog check sits in the excluded table, since it only runs on
+GitHub. The ship-gate passed my branch on the first run, all seven
+pr-precheck checks included, but then crashed printing the model's reply
+in Windows' `gbk` console, and my terminal `claude` had been broken until
+I replaced the `claude/...` model names in my settings. When I opened the
+PR, my voice guard stopped it for a behavior claim with no run behind it,
+so I ran the check, pasted the output, and the second attempt went
+through.
 
 **Unit 8: [one line on the tool work]**
 
@@ -162,26 +171,49 @@ for an update.
 
 **Problem Description**
 
-[In your own words, what is broken or missing?]
+`PageContextRouter` decides which agent answers a request, based on the
+page the user is on. The issue lists six behaviors that should have unit
+tests. PR #164 tested four of them; two still have no test: an empty-string
+page context falling back to the default agent, and page-context matching
+being case-sensitive. Without tests, someone could change either behavior
+and every test would still pass.
 
 **Expected Behavior**
 
-[What should happen?]
+The test suite pins both behaviors as they work today (the maintainer
+agreed to pin the current behavior): `route("")` returns the default agent,
+and a context that differs only in case, like `Search-Relevance`, does not
+match the agent registered for `search-relevance`, so it falls back to the
+default agent too.
 
 **Current Behavior**
 
-[What actually happens?]
+The code already behaves that way, but nothing checks it. The four existing
+tests only pass an exact lowercase context or `None`. When I made matching
+case-insensitive in memory, all four tests still passed, and line coverage
+of the router is already 100%, so coverage cannot show the gap.
 
 **Affected Components**
 
-[Which parts of the codebase are involved?]
+- `src/orchestrator/router.py`: `PageContextRouter.route()`, whose
+  `if page_context:` check (line 44) skips Tier 1 for an empty string.
+- `src/orchestrator/registry.py`: `AgentRegistry.get_agent_for_context()`,
+  an exact dictionary lookup (line 75).
+- `tests/unit/orchestrator/test_router.py`: the four existing tests and their
+  `_registry_with_default()` helper. No production code changes.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: Claude Code, reading only the router subsystem, and my
+  `CLAUDE.local.md` memory file, which holds the distilled result.
+- What it produced: the two source files, the exact lines that cause each
+  behavior, and where their tests live.
+- Difficulties: the issue names a test file (`tests/unit/test_router.py`)
+  that does not exist, and the gap is invisible to coverage, which is
+  already 100%.
+- What changed: I wrote the file-and-line conclusions into
+  `CLAUDE.local.md`, so each new session starts from them instead of
+  re-reading the code.
 
 ---
 
@@ -282,93 +314,225 @@ CI also runs on Linux and macOS; I only ran on Windows.
 
 **Analysis**
 
-[Your analysis of the root cause: what is causing the issue, traced
-to the files and functions involved.]
+The two untested behaviors come from two lines. For the empty string,
+`PageContextRouter.route()` in `src/orchestrator/router.py` checks
+`if page_context:` (line 44) before asking the registry; an empty string
+is falsy, so Tier 1 is skipped and Tier 3 returns the default agent. For
+case, `AgentRegistry.get_agent_for_context()` in
+`src/orchestrator/registry.py` is `self._page_context_map.get(page_context)`
+(line 75), an exact dictionary lookup, so any difference in case misses and
+falls through to the default agent. The four tests in
+`tests/unit/orchestrator/test_router.py` only pass an exact lowercase
+context or `None`, so neither behavior is pinned. The cause is missing
+tests, not a bug in the code.
 
 **Proposed Solution**
 
-[High-level description of your fix approach, and what you are
-deliberately NOT changing.]
+Add two tests to the existing `TestPageContextRouter` class in
+`tests/unit/orchestrator/test_router.py`, reusing `_registry_with_default()`
+(agent `art` on `search-relevance`, default agent `olly`):
+
+- `test_falls_back_to_default_when_context_empty`: `route("")` returns `olly`.
+  This pins the fallback, not the `if page_context:` check itself: with that
+  check removed, `""` would still reach the default agent, because no agent
+  is registered for an empty string.
+- `test_context_match_is_case_sensitive`: `route("Search-Relevance")` returns
+  `olly`, not `art`, pinning the current case-sensitive matching that the
+  maintainer agreed to in the issue.
+
+What I am deliberately not changing: `router.py` and `registry.py` (no
+production code), the matching behavior itself (no case-insensitive
+matching), and the test path the issue suggests (`tests/unit/test_router.py`
+does not exist, so the tests go in the existing file, as I said in my claim).
+The router integration tests the maintainer also mentioned are a separate
+follow-up PR. No CHANGELOG entry: the earlier test-only PR #164 skipped it
+with the `skip-changelog` label, so the PR description asks for that label.
+One open unknown: only a maintainer can apply that label, and the changelog
+check fails the PR until then; if a maintainer prefers an entry, I will add
+one line under `[Unreleased]` instead.
 
 **Implementation Plan**
 
-1. [Modify file X to do Y]
-2. [Add or change Z]
-3. [Update tests]
-
-[Record deviations here as they happen: what changed mid-build and
-why. A recorded deviation is honest work; silent drift is not.]
+1. Make a branch from `main`, `test/9-router-empty-and-case-tests`, and set
+   `user.name` to my real name in this clone for the DCO sign-off.
+2. Add the two tests to `tests/unit/orchestrator/test_router.py`.
+3. Show the case-sensitivity test catches a change: run it against
+   matching made case-insensitive in memory and confirm it fails, then
+   passes on the real code.
+4. Run the three manifest checks: unit tests with the 90% coverage gate,
+   `ruff check .`, and `ruff format --check .`.
+5. Commit with `git commit -s` and a message that says what the commit does.
+6. Save the before and after output in `test_evidence.md` (kept out of the
+   commit) for the PR.
+7. Write the PR description from the repo's template, with `Fixes #9`, the
+   evidence, a request for the `skip-changelog` label, and a line disclosing
+   that I used Claude Code, as the OpenSearch AI Usage Policy asks.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: plan-check, run through Claude Code on `plan.md` (this section)
+  and a short plan comment, `plan-comment.md`, which I did not post.
+- What it produced: accept, with all six required checks passing. The
+  deciding check was that the cause in my plan (the `if page_context:`
+  line and the exact dictionary lookup) matches what I reported on the
+  thread.
+- Difficulties: it accepted while still flagging real problems. My
+  comment promised a PR "within a week", which breaks my own voice-guide
+  rule against promising things I don't control. It quoted code but no
+  run. My plan had no step to disclose AI use in the PR. And my
+  empty-string test pins less than my analysis implied.
+- What changed: the comment now gives an update time and pastes the run;
+  the plan gained a disclosure step and names the changelog label as an
+  open unknown with a fallback; and the empty-string bullet now says it
+  pins the fallback, not the `if page_context:` check.
 
 ---
 
 ## Testing Strategy
 
-[What observable checks prove the fix: your reproduction steps re-run
-against the built change (before and after), and the repo's own test
-suite or checks with the outcome shown. "Tests pass" with nothing
-observable named is not a strategy.]
+Three observable checks, each run before and after the change:
+
+1. **The router tests themselves.** On `main`, the router file collects
+   4 tests, none passing an empty string or a case variant. On my branch it
+   collects 6, and all 6 pass (`6 passed in 0.06s`).
+2. **Does the new test catch a regression?** I made matching
+   case-insensitive in memory, without changing any file, and ran the same
+   tests. On `main`: `4 passed`, so nothing noticed. On my branch:
+   `AssertionError: assert 'art' == 'olly'` in
+   `test_context_match_is_case_sensitive`, `1 failed, 5 passed`. That is
+   the proof the case test pins the behavior. The empty-string test pins
+   only the fallback: removing the `if page_context:` check would not break
+   it, because no agent is registered for an empty string, so I say so
+   instead of claiming more.
+3. **The repo's own checks**, from my ship manifest, run in a plain
+   terminal the way CI runs them: the unit suite with the 90% coverage gate
+   (`884 passed`, coverage 97.69%, unchanged from `main` because the router
+   was already at 100%), `ruff check .` (all checks passed), and
+   `ruff format --check .` (127 files already formatted).
+
+All outputs are saved in `test_evidence.md` and quoted in the PR
+description.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: the ship manifest (`ship-manifest.md`), which lists the repo's
+  three pre-PR checks, plus a small in-memory patch I wrote to test the
+  test.
+- What it produced: the before and after outputs above, all passing on
+  the branch, and a failing run that proves the case test catches a change
+  to matching.
+- Difficulties: line coverage could not measure this work (the router was
+  already at 100%), so "tests pass" alone would have proved nothing; and
+  my virtual environment lives outside the repo, so the manifest commands
+  had to name the venv's own `python.exe` and `ruff.exe` to run in a plain
+  terminal.
+- What changed: I added the in-memory regression check to the plan and the
+  evidence, and I state plainly that the empty-string test pins less than
+  the case test.
 
 ---
 
 ## Implementation Notes
 
-[A running log, added to as you work. Date each entry. What you
-built, decisions you made when you made them, wrong turns included.]
+**2026-10-17**
 
-**[Date]**
+Claimed #9 after noticing PR #164 had already covered four of its six
+cases; asked whether the remaining two were still wanted.
 
-[Entry]
+**2026-10-18**
 
-**[Date]**
+mingshl confirmed and assigned the issue to me. Set up the repo locally
+with uv on Python 3.12 (my system Python is 3.11), with the virtual
+environment outside my Google Drive folder. The four existing router tests
+passed.
 
-[Entry]
+**2026-10-21**
+
+Reproduced the gap: the router routes `""` and `Search-Relevance` to the
+default agent, and the existing tests still pass when matching is made
+case-insensitive. Read CONTRIBUTING.md: commits need a DCO sign-off with my
+real name, while my global git name is a handle.
+
+**2026-11-01**
+
+- My terminal `claude` had been failing for days with "There's an issue
+  with the selected model". The cause was the `claude/...` model names in my
+  Claude Code settings, which my local proxy sent to a port where nothing
+  was listening. Switching to plain model names fixed it, and the voice
+  guard and ship-gate could finally run.
+- The voice guard's draft check crashed with a `TypeError`: Windows read
+  Claude's UTF-8 reply in the `cp936` encoding. Running it with
+  `python3 -X utf8` fixed it, without editing the course script.
+- Found that the repo's changelog check fails test-only PRs unless a
+  maintainer adds `skip-changelog`, as #164 had; decided to ask for the
+  label rather than add an entry.
+- Forked the repo, set `user.name` to my real name in the clone, and made
+  the branch `test/9-router-empty-and-case-tests`.
+- Wrote the two tests in the existing file. A wrong turn I avoided: my
+  first plan comment said the empty-string test pins the `if page_context:`
+  check; plan-check showed it pins only the fallback, so I corrected the
+  plan before building.
+- Confirmed the case test fails against case-insensitive matching, ran the
+  three manifest checks, and committed `2040b37` with `git commit -s`.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: Claude Code for reading the router code and drafting the tests,
+  my `CLAUDE.local.md` for the repo's rules, and plan-check for the plan.
+- What it produced: two tests (11 added lines in one file) and a signed-off
+  commit, kept inside the plan.
+- Difficulties: most of the friction was my own tooling, not the code: a
+  broken model route, an encoding crash in the guard, and a real-name rule
+  my default git config would have broken.
+- What changed: plain model names in my settings, `-X utf8` on the guard
+  hook, and a per-clone `user.name` for the DCO.
 
 ---
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when opened]
+**PR Link:** https://github.com/opensearch-project/opensearch-agent-server/pull/177
 
-**PR Description:** [what the PR says; much of the content above
-adapts into it]
+**PR Description:** Title: "Add router tests for empty and case-mismatched
+page contexts". It says the PR adds the two `PageContextRouter` tests #9
+still needed after #164 (`route("")` and `route("Search-Relevance")` both
+fall back to the default agent), in the existing test file, with no
+production change. It shows why the case test matters (with matching made
+case-insensitive in memory, `main`'s tests still pass but the new test
+fails with `assert 'art' == 'olly'`), shows a run backing the claim that
+the empty-string test pins only the fallback, and pastes the 6 passing
+router tests and the repo checks (884 passed at 97.69% coverage, ruff check
+and format clean). It asks a maintainer for the `skip-changelog` label as
+#164 had, says the router integration tests are a separate follow-up,
+includes `Fixes #9` and an AI disclosure in my words, and answers every
+item of the repo's PR template.
 
 **Maintainer Feedback:**
 
-- [Date]: [feedback received, or "none yet"; silence is a normal
-  state and costs you nothing]
-- [Date]: [how you addressed it]
+- 2026-11-01: none yet. The DCO check passed; the repo's CI, lint and
+  changelog workflows had not started, which is usual until a maintainer
+  approves the runs for a first-time contributor.
 
-**Status:** [Awaiting review / Iterating / Merged / Closed. The
-status is a fact you record, never a grade: the PR is graded as
-opened.]
+**Status:** Awaiting review
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: the ship-gate (my manifest's checks plus my pr-precheck) and the
+  voice guard, both as Claude Code hooks on `gh pr create`.
+- What it produced: `ship-gate: PASS` on my branch, with all three repo
+  checks and all seven pr-precheck checks passing (plan-matched,
+  description-true, evidence-decisive, diff-clean, standards-met,
+  smallest-surface, tests-added). On my first attempt to open the PR, the
+  voice guard stopped it.
+- Difficulties: the guard caught a real claim without a run: my
+  description said removing the `if page_context:` check would still send
+  `""` to the default agent, with no output behind it. The manual
+  ship-gate also crashed after printing PASS, because Windows' `gbk`
+  console could not print an emoji in the model's reply; the pass had
+  already been logged, so the hook still honored it.
+- What changed: I ran that check, pasted its output into the description
+  and `test_evidence.md`, and opened the PR on the second try with both
+  hooks passing.
 
 ---
 

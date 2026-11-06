@@ -99,10 +99,20 @@ PR, my voice guard stopped it for a behavior claim with no run behind it,
 so I ran the check, pasted the output, and the second attempt went
 through.
 
-**Unit 8: [one line on the tool work]**
+**Unit 8: PR monitor and a playbook built from the repo's merge times; the first run drafted a wait (2026-11-05)**
 
-[2-4 sentences: the PR-monitor and your playbook. What it read, what it
-drafted, what you did with the draft.]
+My playbook follows the repo's real pace: CONTRIBUTING.md states no wait,
+and the five latest merged PRs from outside contributors waited 0 to 18.4
+days for a maintainer (median 12.7), so I nudge after 26 quiet days, twice
+that, to match the ping rule in my voice guide. On PR #177 the monitor
+drafted a wait note with nothing to post and a nudge date of 2026-11-27,
+and I sent nothing. It fell short twice: it called the PR "review feedback
+is in" because of Copilot's automatic notice that it had no quota to
+review, and its "1 passing, 1 skipped" check count hid the CI, lint and
+changelog workflows still waiting for a maintainer's approval. I had added
+a rule that bot notices get no reply after reading that notice, and the
+draft cited it; for the checks, I read the PR page myself before deciding
+anything.
 
 ---
 
@@ -475,6 +485,15 @@ real name, while my global git name is a handle.
 - Confirmed the case test fails against case-insensitive matching, ran the
   three manifest checks, and committed `2040b37` with `git commit -s`.
 
+**2026-11-05**
+
+- PR #177 has been quiet for four days. The only activity is Copilot's
+  automatic review, which says it could not run for lack of quota.
+- Measured the repo's review pace for my playbook: the five latest merged
+  PRs from outside contributors (#163, #162, #161, #160, #156) waited 14.1,
+  12.7, 18.4, 0.0 and 1.7 days for a maintainer's first comment, review or
+  merge. Four quiet days is normal here, so I posted nothing.
+
 **Toolkit**
 
 - Tool: Claude Code for reading the router code and drafting the tests,
@@ -509,9 +528,11 @@ item of the repo's PR template.
 
 **Maintainer Feedback:**
 
-- 2026-11-01: none yet. The DCO check passed; the repo's CI, lint and
-  changelog workflows had not started, which is usual until a maintainer
-  approves the runs for a first-time contributor.
+- 2026-11-05: none yet. The only review is Copilot's automatic notice
+  that it could not review the PR (no quota), which needs no reply. The DCO
+  check passed; the repo's CI, lint and changelog workflows are still
+  waiting for a maintainer to approve the runs, which is usual for a
+  first-time contributor.
 
 **Status:** Awaiting review
 
@@ -540,25 +561,64 @@ item of the repo's PR template.
 
 **Technical Skills Gained**
 
-[What you learned technically, named concretely.]
+- Proving that a test guards something when coverage can't show it.
+  `router.py` was already at 100% line coverage, so I changed the code in
+  memory (case-insensitive matching) and confirmed the new test fails while
+  `main`'s tests still pass.
+- Reading exactly what a test pins. The router skips its lookup with
+  `if page_context:`, and the registry does an exact `dict.get`, so the
+  empty-string test pins only the fallback, not that check; I said so in
+  the PR instead of overclaiming.
+- OpenSearch's contribution mechanics: a DCO sign-off with my real name
+  (`git commit -s`, with `user.name` set per clone), a fork with an
+  `upstream` remote and `gh repo set-default`, the `skip-changelog` label
+  for test-only PRs, and maintainer approval for a first-time
+  contributor's workflow runs.
+- My own tooling: Claude Code hooks that check a command before it runs
+  (the voice guard and the ship-gate), uv with its environment outside
+  Google Drive, and Windows' `cp936`/`gbk` console encoding, worked around
+  with `python3 -X utf8`.
 
 **Challenges Overcome**
 
-[What was hard and how you solved it; point at the real events, the
-Toolkit blocks above are full of them.]
+- The issue was mostly done: PR #164 had already covered four of its six
+  cases. I asked on #9 whether the other two were still wanted before
+  writing anything, and mingshl confirmed them and assigned me.
+- The gap was invisible to coverage, so I had to show its value another
+  way, which became the in-memory check pasted into the PR description.
+- My tools broke more than the code did: a `claude/...` model name routed
+  to a port with nothing listening, the guard crashed on Windows encoding,
+  and Git Bash's `ln -s` silently copied files. I fixed each at the root
+  (plain model names, `-X utf8`, native symlinks) and checked it worked.
+- My voice guard stopped my first `gh pr create` because the description
+  made a claim with no run behind it. I ran the check and pasted the output
+  instead of softening the sentence.
 
 **What I'd Do Differently Next Time**
 
-[Reflection on your process.]
+- Read the whole issue thread and the repo's recent merged PRs before
+  claiming. I would have seen #164 first, and my claim would have offered
+  an update time, which my own claim rule now requires.
+- Test my tooling end to end in the first week (`claude -p` in a plain
+  terminal), not on the day a hook first needs it.
+- Measure the repo's review pace before opening the PR, so I set my
+  expectations, and my nudge date, on day one rather than four days in.
 
 ---
 
 ## Resources Used
 
-[What actually helped, not a reading list. List things this story
-already shows you using: the doc you followed to set the environment
-up, the thread that explained the bug, the person who answered you.
-One real entry beats ten plausible ones.]
-
-- [Link to documentation that helped]
-- [Discussion, issue, or post that helped]
+- opensearch-agent-server's CONTRIBUTING.md, for the DCO real-name rule,
+  the coverage gate and the review process:
+  https://github.com/opensearch-project/opensearch-agent-server/blob/main/CONTRIBUTING.md
+- The OpenSearch project's AI Usage Policy, which my PR's AI disclosure
+  follows: https://github.com/opensearch-project/.github/blob/main/CONTRIBUTING.md
+- PR #164, which showed where the router tests live, the
+  `_registry_with_default()` helper, and the `skip-changelog` label for a
+  test-only change:
+  https://github.com/opensearch-project/opensearch-agent-server/pull/164
+- mingshl's reply on issue #9, which confirmed the two missing cases and
+  pinned the case test to current behavior:
+  https://github.com/opensearch-project/opensearch-agent-server/issues/9
+- The course's Unit 8 materials, for the PR monitor and the playbook
+  template: https://github.com/codepath/ai301-unit8-starter
